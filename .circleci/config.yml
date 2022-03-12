@@ -10,13 +10,13 @@ jobs:
       - checkout
       - aws-cli/setup
       - run:
-          name: Excute Create Cfn Stack
+          name: Excute Create/Update Cfn Stack
           command: |
             set +e
             aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE | grep sample-stack
             if [ $? -eq 0 ]; then
               aws cloudformation update-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
-              if [ $? -eq 255 ]; then
+              if [ $? -eq 255 -o $? -eq 254 ]; then
                 exit 0
               else
                 aws cloudformation wait stack-update-complete --stack-name sample-stack
