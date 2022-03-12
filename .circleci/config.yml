@@ -12,7 +12,7 @@ jobs:
       - run:
           name: Excute Create Cfn Stack
           command: |
-            aws cloudformation create-stack --stack-name sample-stack --template-body file:///service/infrastructure.yml
+            aws cloudformation create-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
 
 workflows:
   infrastructure-ci:
