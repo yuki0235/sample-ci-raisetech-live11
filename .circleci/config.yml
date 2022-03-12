@@ -12,8 +12,15 @@ jobs:
       - run:
           name: Excute Create Cfn Stack
           command: |
-            aws cloudformation create-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
-            aws cloudformation wait stack-create-complete --stack-name sample-stack
+            set +e
+            aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE | grep sample-stack
+            if [ $? -eq 0 ]; then
+              aws cloudformation update-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
+              aws cloudformation wait stack-update-complete --stack-name sample-stack
+            elif [ $? -eq 1 ]; then
+              aws cloudformation create-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
+              aws cloudformation wait stack-create-complete --stack-name sample-stack
+            fi
 
 workflows:
   infrastructure-ci:
