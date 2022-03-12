@@ -1,26 +1,32 @@
-# Use the latest 2.1 version of CircleCI pipeline process engine.
-# See: https://circleci.com/docs/2.0/configuration-reference
 version: 2.1
 
-# Define a job to be invoked later in a workflow.
-# See: https://circleci.com/docs/2.0/configuration-reference/#jobs
+orbs:
+  aws-cli: circleci/aws-cli@2.1.0
+
 jobs:
-  say-hello:
-    # Specify the execution environment. You can specify an image from Dockerhub or use one of our Convenience Images from CircleCI's Developer Hub.
-    # See: https://circleci.com/docs/2.0/configuration-reference/#docker-machine-macos-windows-executor
-    docker:
-      - image: cimg/base:stable
-    # Add steps to the job
-    # See: https://circleci.com/docs/2.0/configuration-reference/#steps
+  aws_cli:
+    executor: aws-cli/default
     steps:
       - checkout
+      - aws-cli/setup
       - run:
-          name: "Say hello"
-          command: "echo Hello, World!"
+          name: Excute Create/Update Cfn Stack
+          command: |
+            set +e
+            aws cloudformation list-stacks --stack-status-filter CREATE_COMPLETE | grep sample-stack
+            if [ $? -eq 0 ]; then
+              aws cloudformation update-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
+              if [ $? -eq 255 -o $? -eq 254 ]; then
+                exit 0
+              else
+                aws cloudformation wait stack-update-complete --stack-name sample-stack
+              fi
+            elif [ $? -eq 1 ]; then
+              aws cloudformation create-stack --stack-name sample-stack --template-body file://service/infrastructure.yml
+              aws cloudformation wait stack-create-complete --stack-name sample-stack
+            fi
 
-# Invoke jobs via workflows
-# See: https://circleci.com/docs/2.0/configuration-reference/#workflows
 workflows:
-  say-hello-workflow:
+  infrastructure-ci:
     jobs:
-      - say-hello
+      - aws_cli
